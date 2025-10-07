@@ -10,7 +10,6 @@ import soundfile as sf
 import io
 
 # --- НАСТРОЙКА ---
-# Директория для голосов. Скрипт создаст ее сам.
 VOICES_DIR = "/workspace/voices/"
 os.makedirs(VOICES_DIR, exist_ok=True)
 
@@ -18,7 +17,11 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"🚀 Используется устройство: {device}")
 
 print(">>> Загрузка модели Coqui XTTS-v2...")
-tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+
+# ⭐️ ГЛАВНОЕ ИСПРАВЛЕНИЕ: Добавляем model_args={"weights_only": False}
+# Это говорит PyTorch, что мы доверяем файлу модели и разрешаем его загрузку.
+tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", model_args={"weights_only": False}).to(device)
+
 print(">>> Модель успешно загружена.")
 
 # --- МОДЕЛЬ ЗАПРОСА ---
@@ -29,14 +32,13 @@ class TTSRequest(BaseModel):
     # ... другие параметры ...
 
 # --- API ---
-app = FastAPI(title="Direct Install TTS API", version="1.0.0")
+app = FastAPI(title="Direct Install TTS API", version="1.1.0")
 
 @app.post("/tts_to_audio/", responses={200: {"content": {"audio/wav": {}}}})
 def tts_to_audio(request: TTSRequest):
     speaker_wav_path = os.path.join(VOICES_DIR, f"{request.speaker_wav}.wav")
 
     if not os.path.exists(speaker_wav_path):
-        # Если голоса нет, можно попробовать скачать его или вернуть ошибку
         raise HTTPException(status_code=404, detail=f"Голос '{request.speaker_wav}' не найден.")
 
     try:
@@ -54,5 +56,5 @@ def tts_to_audio(request: TTSRequest):
 
 @app.get("/voices")
 def list_voices():
-    voices = [f.split('.')[0] for f in os.listdir(VOICES_DIR) if f.endswith('.wav')]
+    voices = [f.split('.')[0] for f in os.listdir(VOICES_DIR) if f.endswith('.wav') or f.endswith('.flac')]
     return {"available_voices": voices}
