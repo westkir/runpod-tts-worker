@@ -18,9 +18,8 @@ print(f"🚀 Используется устройство: {device}")
 
 print(">>> Загрузка модели Coqui XTTS-v2...")
 
-# ⭐️ ГЛАВНОЕ ИСПРАВЛЕНИЕ: Добавляем model_args={"weights_only": False}
-# Это говорит PyTorch, что мы доверяем файлу модели и разрешаем его загрузку.
-tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", model_args={"weights_only": False}).to(device)
+# ⭐️ ИСПРАВЛЕНИЕ: Убираем 'model_args', так как он больше не нужен со старой версией PyTorch
+tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 
 print(">>> Модель успешно загружена.")
 
@@ -29,10 +28,9 @@ class TTSRequest(BaseModel):
     text: str = Field(...)
     speaker_wav: str = Field(...)
     language: str = Field("ru")
-    # ... другие параметры ...
 
 # --- API ---
-app = FastAPI(title="Direct Install TTS API", version="1.1.0")
+app = FastAPI(title="Direct Install TTS API", version="1.2.0")
 
 @app.post("/tts_to_audio/", responses={200: {"content": {"audio/wav": {}}}})
 def tts_to_audio(request: TTSRequest):
